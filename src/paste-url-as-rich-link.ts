@@ -8,7 +8,7 @@ import {
   showToast,
   Toast,
 } from "@raycast/api";
-import { escapeHTML, getPageTitle, validateUrl } from "./utils";
+import { escapeHTML, validateUrl } from "./utils";
 
 export default async function pasteUrlAsRichLink() {
   if (!environment.canAccess(BrowserExtension)) {
@@ -31,35 +31,34 @@ export default async function pasteUrlAsRichLink() {
   });
 
   const clipboardText = (await Clipboard.readText()) ?? "";
-  const clipboardTextValidateResult = validateUrl(clipboardText);
-  if (!clipboardTextValidateResult.ok) {
-    console.error(clipboardTextValidateResult.error.message);
+  const clipboardTextResult = validateUrl(clipboardText);
+  if (!clipboardTextResult.ok) {
+    console.error(clipboardTextResult.error.message);
     showToast({
       style: Toast.Style.Failure,
       title: `Invalid URL: ${clipboardText}`,
     });
     return;
   }
-  const url = clipboardTextValidateResult.url;
+  const url = clipboardTextResult.url;
 
-  const getPageTitleResult = await getPageTitle(url.href);
-  if (!getPageTitleResult.ok) {
-    console.error(getPageTitleResult.error.message);
+  const tabs = await BrowserExtension.getTabs();
+  const title = tabs.find((tab) => tab.url === url.href)?.title;
+  if (!title) {
     showToast({
       style: Toast.Style.Failure,
       title: `Failed to get page title: ${url.href}`,
     });
     return;
   }
-  const title = getPageTitleResult.title;
 
   const scrapboxLink = `[${title} ${url.href}]`;
   const markdownLink = `[${title}](${url.href})`;
   const richLink = `<a href="${escapeHTML(url.href)}">${escapeHTML(title ?? "")}</a>`;
 
-  const activeTabUrl = (await BrowserExtension.getTabs()).find((tab) => tab.active)?.url ?? "";
-  const activeTabUrlValidateResult = validateUrl(activeTabUrl);
-  const activeTabHostname = activeTabUrlValidateResult.ok ? activeTabUrlValidateResult.url.hostname : "";
+  const activeTabUrl = tabs.find((tab) => tab.active)?.url ?? "";
+  const activeTabUrlResult = validateUrl(activeTabUrl);
+  const activeTabHostname = activeTabUrlResult.ok ? activeTabUrlResult.url.hostname : "";
 
   const isFrontMostApplicationChrome = (await getFrontmostApplication()).bundleId?.startsWith("com.google.Chrome");
 
