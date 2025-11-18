@@ -65,6 +65,7 @@ export default async function pasteUrlAsRichLink() {
   if (isFrontMostApplicationChrome && activeTabHostname === "scrapbox.io") {
     await Clipboard.paste({ text: scrapboxLink });
   } else if (isFrontMostApplicationChrome && activeTabHostname === "github.com") {
+    // When pasting Clipboard content with HTML into GitHub, GitHub generates a new markdown link using the text as the title, resulting in nested markdown. To avoid this, only the markdown link is pasted here.
     await Clipboard.paste({ text: markdownLink });
   } else {
     await Clipboard.paste({ html: richLink, text: markdownLink });
