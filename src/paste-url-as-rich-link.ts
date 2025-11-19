@@ -1,14 +1,6 @@
-import {
-  BrowserExtension,
-  Clipboard,
-  confirmAlert,
-  environment,
-  getFrontmostApplication,
-  open,
-  showToast,
-  Toast,
-} from "@raycast/api";
-import { escapeHTML, validateUrl } from "./utils";
+import { BrowserExtension, Clipboard, confirmAlert, environment, open, showToast, Toast } from "@raycast/api";
+import { validateUrl, escapeHTML } from "./utils";
+import { getActiveTabHostname } from "./get-active-tab-hostname";
 
 export default async function pasteUrlAsRichLink() {
   if (!environment.canAccess(BrowserExtension)) {
@@ -41,9 +33,7 @@ export default async function pasteUrlAsRichLink() {
     return;
   }
   const url = clipboardTextResult.url;
-
-  const tabs = await BrowserExtension.getTabs();
-  const title = tabs.find((tab) => tab.url === url.href)?.title;
+  const title = (await BrowserExtension.getTabs()).find((tab) => tab.url === url.href)?.title;
   if (!title) {
     showToast({
       style: Toast.Style.Failure,
@@ -52,22 +42,22 @@ export default async function pasteUrlAsRichLink() {
     return;
   }
 
-  const scrapboxLink = `[${title} ${url.href}]`;
-  const markdownLink = `[${title}](${url.href})`;
-  const richLink = `<a href="${escapeHTML(url.href)}">${escapeHTML(title ?? "")}</a>`;
-
-  const activeTabUrl = tabs.find((tab) => tab.active)?.url ?? "";
-  const activeTabUrlResult = validateUrl(activeTabUrl);
-  const activeTabHostname = activeTabUrlResult.ok ? activeTabUrlResult.url.hostname : "";
-
-  const isFrontMostApplicationChrome = (await getFrontmostApplication()).bundleId?.startsWith("com.google.Chrome");
-
-  if (isFrontMostApplicationChrome && activeTabHostname === "scrapbox.io") {
-    await Clipboard.paste({ text: scrapboxLink });
-  } else if (isFrontMostApplicationChrome && activeTabHostname === "github.com") {
-    // When pasting Clipboard content with HTML into GitHub, GitHub generates a new markdown link using the text as the title, resulting in nested markdown. To avoid this, only the markdown link is pasted here.
-    await Clipboard.paste({ text: markdownLink });
-  } else {
-    await Clipboard.paste({ html: richLink, text: markdownLink });
+  const hostname = await getActiveTabHostname();
+  switch (hostname) {
+    case "scrapbox.io":
+      Clipboard.paste({
+        text: `[${title} ${url.href}]`,
+      });
+      break;
+    case "github.com":
+      Clipboard.paste({
+        text: `[${title}](${url.href})`,
+      });
+      break;
+    default:
+      Clipboard.paste({
+        text: `[${title}](${url.href})`,
+        html: `<a href="${escapeHTML(url.href)}">${escapeHTML(title)}</a>`,
+      });
   }
 }
