@@ -13,10 +13,10 @@ import { escapeHTML, validateUrl } from "./utils";
 export default async function pasteUrlAsRichLink() {
   if (!environment.canAccess(BrowserExtension)) {
     await confirmAlert({
-      title: "Browser Extension Required",
-      message: "Please install the browser extension to use this command",
+      title: "Raycast Browser Extension Required",
+      message: "Please install the Raycast browser extension to use this command",
       primaryAction: {
-        title: "Open Browser Extension",
+        title: "Open Extension Page",
         onAction: async () => {
           await open("https://www.raycast.com/browser-extension");
         },
