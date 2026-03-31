@@ -21,6 +21,15 @@
       "mode": "no-view"
     }
   ],
+  "preferences": [
+    {
+      "name": "gyazoAccessToken",
+      "title": "Gyazo Access Token",
+      "description": "Access token for Gyazo API to upload clipboard images",
+      "type": "password",
+      "required": true
+    }
+  ],
   "dependencies": {
     "@raycast/api": "^1.103.6",
     "@raycast/utils": "^1.17.0"
