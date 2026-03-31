@@ -1,6 +1,5 @@
 import { BrowserExtension, Clipboard, confirmAlert, environment, open, showToast, Toast } from "@raycast/api";
-import { validateUrl, escapeHTML } from "./utils";
-import { getActiveTabHostname } from "./get-active-tab-hostname";
+import { escapeHTML, validateUrl } from "./utils";
 
 export default async function pasteUrlAsRichLink() {
   if (!environment.canAccess(BrowserExtension)) {
@@ -33,7 +32,9 @@ export default async function pasteUrlAsRichLink() {
     return;
   }
   const url = clipboardTextResult.url;
-  const title = (await BrowserExtension.getTabs()).find((tab) => tab.url === url.href)?.title;
+
+  const tabs = await BrowserExtension.getTabs();
+  const title = tabs.find((tab) => tab.url === url.href)?.title;
   if (!title) {
     showToast({
       style: Toast.Style.Failure,
@@ -42,13 +43,14 @@ export default async function pasteUrlAsRichLink() {
     return;
   }
 
-  const hostname = await getActiveTabHostname();
-  switch (hostname) {
-    case "scrapbox.io":
-      Clipboard.paste({
-        text: `[${title} ${url.href}]`,
-      });
-      break;
+  const activeTabHostname = (() => {
+    const activeTab = tabs.find((tab) => tab.active);
+    if (!activeTab) return null;
+    const result = validateUrl(activeTab.url);
+    return result.ok ? result.url.hostname : null;
+  })();
+
+  switch (activeTabHostname) {
     case "github.com":
       Clipboard.paste({
         text: `[${title}](${url.href})`,
